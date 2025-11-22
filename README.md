@@ -1,3 +1,1 @@
-# Zero-to-One-AI-Servertest
-
-# test 
+# Zero-to-One-AI-Server
