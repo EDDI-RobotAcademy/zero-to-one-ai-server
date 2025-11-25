@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from naver.application.usecase.naver_usecase import NaverUseCase
-from naver.infrastructure.client.naver_api import NaverApiError
+from naver.adapter.output.naver_api_adapter import NaverApiError
+from naver.application.usecase.naver_search_usecase import NaverSearchUseCase
 
 naver_router = APIRouter()
 
 
-def get_naver_usecase() -> NaverUseCase:
+def get_naver_usecase() -> NaverSearchUseCase:
     # Provided via dependency override in composition root (app/main.py)
-    raise RuntimeError("NaverUseCase dependency is not wired")
+    raise RuntimeError("NaverSearchUseCase dependency is not wired")
 
 
 @naver_router.get("/products")
@@ -16,7 +16,7 @@ def search_products(
     query: str,
     start: int = 1,
     display: int = 10,
-    usecase: NaverUseCase = Depends(get_naver_usecase),
+    usecase: NaverSearchUseCase = Depends(get_naver_usecase),
 ):
     try:
         products = usecase.search_products(query=query, start=start, display=display)

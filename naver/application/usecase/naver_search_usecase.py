@@ -4,7 +4,7 @@ from naver.application.port.naver_search_port import NaverSearchPort
 from naver.domain.product import Product
 
 
-class NaverUseCase:
+class NaverSearchUseCase:
     def __init__(self, repository: NaverSearchPort):
         self.repository = repository
 
