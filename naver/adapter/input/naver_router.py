@@ -16,10 +16,16 @@ def search_products(
     query: str,
     start: int = 1,
     display: int = 10,
+    smartstore_only: bool = True,
     usecase: NaverSearchUseCase = Depends(get_naver_usecase),
 ):
     try:
-        products = usecase.search_products(query=query, start=start, display=display)
+        products = usecase.search_products(
+            query=query,
+            start=start,
+            display=display,
+            smartstore_only=smartstore_only,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NaverApiError as exc:

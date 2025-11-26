@@ -53,7 +53,13 @@ def _clean_title(title: str) -> str:
 class NaverSearchApiAdapter(NaverSearchPort):
     """Outbound adapter: call Naver Shopping API and map to domain products."""
 
-    def search_products(self, query: str, start: int = 1, display: int = 10) -> List[Product]:
+    def search_products(
+        self,
+        query: str,
+        start: int = 1,
+        display: int = 10,
+        smartstore_only: bool = False,
+    ) -> List[Product]:
         payload = _request_search_products(query=query, start=start, display=display)
 
         items = payload.get("items", []) if isinstance(payload, dict) else []
