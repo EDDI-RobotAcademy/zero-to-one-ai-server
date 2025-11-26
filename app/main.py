@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 # from social_oauth.adapter.input.web.google_oauth2_router import authentication_router
 # from account.adapter.input.web.account_router import account_router
 from naver.adapter.input.web.naver_router import naver_router
+from review.adapter.input.review_router import review_router
 
 load_dotenv()
 
@@ -30,7 +31,7 @@ app.add_middleware(
 # app.include_router(authentication_router, prefix="/authentication")
 # app.include_router(account_router, prefix="/account")
 app.include_router(naver_router, prefix="/naver")
-
+app.include_router(review_router, prefix="/review")
 # 앱 실행
 if __name__ == "__main__":
     import uvicorn
