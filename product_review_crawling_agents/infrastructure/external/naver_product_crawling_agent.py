@@ -106,8 +106,7 @@ def parse_reviews_from_html_list(review_html_list: List[str]) -> dict:
     print(f'reviews: {reviews_dict}')
     return reviews_dict
 
-def get_naver_shopping_product_reviews(product_url: str) -> str:
+def get_naver_shopping_product_reviews(product_url: str) -> dict:
     naver_shopping_product_review_html_list = analyze_naver_shopping_product_url_and_get_html_list(product_url)
     reviews_dictionary = parse_reviews_from_html_list(naver_shopping_product_review_html_list)
-    reviews_json = json.dumps(reviews_dictionary)
-    return reviews_json
+    return reviews_dictionary
