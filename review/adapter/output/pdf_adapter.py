@@ -31,17 +31,16 @@ class PdfAdapter(PdfPort):
         story.append(Spacer(1, 12))
 
         table_data = [
-            ["구분", "내용"],
-            ["상품명", document.product_name],
-            ["가격", document.price],
-            ["카테고리", document.category],
-            ["요약", document.summary],
-            ["긍정 요인", document.positive_features],
-            ["부정 요인", document.negative_features],
-            ["키워드", ", ".join(document.keywords)],
+            [Paragraph("구분", styles["Normal"]), Paragraph("내용", styles["Normal"])],
+            [Paragraph("상품명", styles["Normal"]), Paragraph(document.name, styles["Normal"])],
+            [Paragraph("가격", styles["Normal"]), Paragraph(document.price, styles["Normal"])],
+            [Paragraph("요약", styles["Normal"]), Paragraph(document.summary.replace('\n', '<br/>'), styles["Normal"])],
+            [Paragraph("긍정 요인", styles["Normal"]), Paragraph(document.positive_features.replace('\n', '<br/>'), styles["Normal"])],
+            [Paragraph("부정 요인", styles["Normal"]), Paragraph(document.negative_features.replace('\n', '<br/>'), styles["Normal"])],
+            [Paragraph("키워드", styles["Normal"]), Paragraph(", ".join(document.keywords), styles["Normal"])],
         ]
 
-        table = Table(table_data, colWidths=[80, 400])
+        table = Table(table_data, colWidths=[80, 400], rowHeights=None)
         table.setStyle(TableStyle([
             ("FONTNAME", (0, 0), (-1, -1), "NanumGothic"),
             ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
