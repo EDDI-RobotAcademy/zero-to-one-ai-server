@@ -123,11 +123,10 @@ class PreprocessUseCase:
         return base_patterns
 
     def _normalize_repetitions(self, text: str) -> str:
-        """Collapse character repetitions (e.g., 오오오오 → 오, ㅋㅋㅋㅋ → ㅋ)."""
-        # Limit repeated punctuation to a single character
         text = re.sub(r"([.!?~])\1{1,}", r"\1", text)
-        # Collapse any other repeated character (including Hangul) to a single occurrence
-        return REPETITION_PATTERN.sub(r"\1", text)
+        text = REPETITION_PATTERN.sub(r"\1", text)
+        text = re.sub(r"(요|여|야|유)(오+)", r"\1", text)
+        return text
 
     def _split_sentences(self, text: str) -> List[str]:
         if not text:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from review.domain.pdf_document import PdfDocument
 from review.application.usecase.pdf_usecase import PdfUseCase
@@ -58,6 +58,14 @@ SAMPLE_REVIEWS = [
 ]
 
 # 전처리만 실행해 결과를 확인하는 엔드포인트
+""" 테스트 시 POST /reviews/preprocess-test body
+{
+  "reviews": [
+    "가방 디자인이 예뻐요오오오오 완전전 굿이욤욤욤",
+    "스트랩이 좀 짧음음음ㅜㅜㅜ"
+  ]
+}"""
+
 @review_router.post("/preprocess-test")
 def preprocess_reviews(data: PreprocessRequest):
     input_reviews = data.reviews if data.reviews else SAMPLE_REVIEWS
