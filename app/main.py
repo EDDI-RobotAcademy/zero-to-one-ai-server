@@ -1,13 +1,10 @@
 import os
 from dotenv import load_dotenv
 
-# from anonymous_board.adapter.input.web.anonymous_board_router import anonymous_board_router
-# from config.database.session import Base, engine
-# from social_oauth.adapter.input.web.google_oauth2_router import authentication_router
-# from account.adapter.input.web.account_router import account_router
-from naver.adapter.input.naver_router import naver_router
+from naver.bootstrap import setup_module as setup_naver
+from product_review_crawling_agents.adapter.input.web.product_review_crawling_agents_router import \
+    product_review_crawling_agents_router
 from review.adapter.input.web.review_router import review_router
-
 
 load_dotenv()
 
@@ -28,17 +25,15 @@ app.add_middleware(
     allow_headers=["*"],         # 모든 헤더 허용
 )
 
-#app.include_router(anonymous_board_router, prefix="/board")
-# app.include_router(authentication_router, prefix="/authentication")
-# app.include_router(account_router, prefix="/account")
-app.include_router(naver_router, prefix="/naver")
-app.include_router(review_router, prefix="/reviews")
+app.include_router(product_review_crawling_agents_router, prefix="/product-reviews")
+app.include_router(review_router, prefix="/review")
+
+#모듈
+setup_naver(app)
 
 # 앱 실행
 if __name__ == "__main__":
     import uvicorn
     host = os.getenv("APP_HOST")
     port = int(os.getenv("APP_PORT"))
-    # Base.metadata.drop_all(bind=engine)
-    # Base.metadata.create_all(bind=engine)
     uvicorn.run(app, host=host, port=port)

@@ -1,13 +1,9 @@
 class ReviewPrompts:
     @staticmethod
-    def summary(product_name: str, product_price: str, preprocessed_reviews: str) -> str:
+    def summary(product_name: str, preprocessed_reviews: str) -> str:
         return f"""
         당신은 전자상거래 리뷰 분석 전문가입니다.
-        아래는 전처리된 리뷰 데이터이며, **리뷰 내용만을 기반으로** 정확한 JSON을 생성해야 합니다.
-
-        상품 정보:
-        - 이름: {product_name}
-        - 가격: {product_price}
+        아래는 전처리된 리뷰 데이터이며, **상품 '{product_name}'을 중심으로** 리뷰 내용만 기반해 정확한 JSON을 생성해야 합니다.
 
         입력 리뷰(전처리 완료):
         {preprocessed_reviews}
