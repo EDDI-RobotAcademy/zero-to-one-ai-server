@@ -430,3 +430,6 @@ models/
 
 # exclude donwloaded_docs
 downloaded_docs/
+
+# exclude images
+*.png
