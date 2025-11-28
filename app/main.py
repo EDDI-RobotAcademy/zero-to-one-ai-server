@@ -2,10 +2,9 @@ import os
 from dotenv import load_dotenv
 
 from naver.bootstrap import setup_module as setup_naver
-from product_review_crawling_agents.adapter.input.web.product_review_crawling_agents_router import (
-    product_review_crawling_agents_router,
-)
-from review.bootstrap import setup_module as setup_review
+from product_review_crawling_agents.adapter.input.web.product_review_crawling_agents_router import \
+    product_review_crawling_agents_router
+from review.adapter.input.web.review_router import review_router
 
 load_dotenv()
 
@@ -27,9 +26,9 @@ app.add_middleware(
 )
 
 app.include_router(product_review_crawling_agents_router, prefix="/product-reviews")
+app.include_router(review_router, prefix="/review")
 
-# 모듈
-setup_review(app)
+#모듈
 setup_naver(app)
 
 # 앱 실행

@@ -1,0 +1,1 @@
+"""Product review collector package."""

@@ -1,55 +1,39 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from product_review_crawling_agents.application.usecase.product_review_crawling_agents_usecase import (
-    ProductReviewAgentsUseCase,
-)
+from product_review_crawling_agents.application.usecase.product_review_crawling_agents_usecase import \
+    ProductReviewAgentsUseCase
 from review.adapter.input.web.request.SummaryRequest import SummaryRequest
-from review.adapter.input.web.response.SummaryResponse import ProductSummary, SummaryResponse
-from review.application.usecase.pdf_usecase import PdfUseCase
+from review.adapter.input.web.response.SummaryResponse import SummaryResponse, ProductSummary
+from review.adapter.output.llm_adapter import LLMAdapter
+from review.adapter.output.pdf_adapter import PdfAdapter
+from review.adapter.output.s3_upload_adapter import S3UploaderAdapter
 from review.application.usecase.preprocess_usecase import PreprocessUseCase
+from review.application.usecase.pdf_usecase import PdfUseCase
 from review.application.usecase.summarize_usecase import SummarizeUseCase
 from review.domain.pdf_document import PdfDocument
+from review.infrastructure.client.openai_client import OpenAIClient
+from config.openai.config import openai_client
 
 review_router = APIRouter()
+client = OpenAIClient(openai_client)
 
-
-def get_review_crawling_usecase() -> ProductReviewAgentsUseCase:
-    # Provided via dependency override in review.bootstrap.setup_module
-    raise RuntimeError("ProductReviewAgentsUseCase dependency is not wired")
-
-
-def get_preprocess_usecase() -> PreprocessUseCase:
-    # Provided via dependency override in review.bootstrap.setup_module
-    raise RuntimeError("PreprocessUseCase dependency is not wired")
-
-
-def get_summarize_usecase() -> SummarizeUseCase:
-    # Provided via dependency override in review.bootstrap.setup_module
-    raise RuntimeError("SummarizeUseCase dependency is not wired")
-
-
-def get_pdf_usecase() -> PdfUseCase:
-    # Provided via dependency override in review.bootstrap.setup_module
-    raise RuntimeError("PdfUseCase dependency is not wired")
+summarizeUsecase = SummarizeUseCase(LLMAdapter(client))
+naverReviewCrawlingUsecase = ProductReviewAgentsUseCase()
+preprocessUsecase = PreprocessUseCase()
+pdfUsecase = PdfUseCase(PdfAdapter(), S3UploaderAdapter())
 
 
 @review_router.post("/summary", response_model=SummaryResponse)
-async def analyze_product(
-    data: SummaryRequest,
-    crawler: ProductReviewAgentsUseCase = Depends(get_review_crawling_usecase),
-    preprocess_usecase: PreprocessUseCase = Depends(get_preprocess_usecase),
-    summarize_usecase: SummarizeUseCase = Depends(get_summarize_usecase),
-    pdf_usecase: PdfUseCase = Depends(get_pdf_usecase),
-):
+async def analyze_product(data: SummaryRequest):
     # 1. 크롤링
-    raw_reviews = await crawler.crawling_naver_review_agents(data.info_url)
+    raw_reviews = await naverReviewCrawlingUsecase.crawling_naver_review_agents(data.info_url)
 
     # 2. 전처리
-    preprocessed_data = preprocess_usecase.execute(raw_reviews)
-    preprocessed_text = " ".join(item["text"] for item in preprocessed_data["clean_reviews"])
+    preprocessed_data = preprocessUsecase.execute(raw_reviews)
+    preprocessed_text = " ".join([item["text"] for item in preprocessed_data["clean_reviews"]])
 
     # 3. 요약
-    summary_result = summarize_usecase.summarize_review(data.name, preprocessed_text)
+    summary_result = summarizeUsecase.summarize_review(data.name, preprocessed_text)
 
     # 4. PDF 생성 + S3 업로드
     pdf_document = PdfDocument(
@@ -58,10 +42,10 @@ async def analyze_product(
         summary=summary_result["summary"],
         positive_features=summary_result["positive_features"],
         negative_features=summary_result["negative_features"],
-        keywords=summary_result["keywords"],
+        keywords=summary_result["keywords"]
     )
 
-    pdf_result = pdf_usecase.execute(pdf_document)
+    pdf_result = pdfUsecase.execute(pdf_document)
 
     return SummaryResponse(
         product_summary=ProductSummary(
@@ -70,9 +54,9 @@ async def analyze_product(
             summary=summary_result["summary"],
             positive_features=summary_result["positive_features"],
             negative_features=summary_result["negative_features"],
-            keywords=summary_result["keywords"],
+            keywords=summary_result["keywords"]
         ),
-        pdf_url=pdf_result["url"],
+        pdf_url=pdf_result["url"]
     )
 
 
