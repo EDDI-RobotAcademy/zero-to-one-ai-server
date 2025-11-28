@@ -11,7 +11,6 @@ class NaverSearchPort(ABC):
         query: str,
         start: int = 1,
         display: int = 10,
-        smartstore_only: bool = False,
     ) -> List[Product]:
         """Search products by keyword using Naver Shopping API."""
         raise NotImplementedError
