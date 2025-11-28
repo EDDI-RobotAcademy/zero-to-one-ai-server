@@ -13,7 +13,6 @@ class NaverSearchUseCase:
         query: str,
         start: int = 1,
         display: int = 10,
-        smartstore_only: bool = False,
     ) -> List[Product]:
         if not query or not query.strip():
             raise ValueError("query is required")
@@ -34,18 +33,16 @@ class NaverSearchUseCase:
                 query=search_query,
                 start=api_start,
                 display=page_size,
-                smartstore_only=smartstore_only,
             )
 
             if not products:
                 break
 
-            if smartstore_only:
-                products = [
-                    product
-                    for product in products
-                    if "smartstore.naver.com" in (product.info_url or "")
-                ]
+            products = [
+                product
+                for product in products
+                if "smartstore.naver.com" in (product.info_url or "")
+            ]
 
             collected.extend(products)
 

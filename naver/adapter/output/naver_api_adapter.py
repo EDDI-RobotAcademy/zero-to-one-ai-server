@@ -1,5 +1,6 @@
 import html
 import re
+from urllib.parse import urlparse
 from typing import Any, Dict, List
 
 import requests
@@ -50,6 +51,20 @@ def _clean_title(title: str) -> str:
     return _TAG_RE.sub("", html.unescape(title or ""))
 
 
+def _normalize_smartstore_url(url: str) -> str:
+    """smartstore.naver.com 도메인만 유지하고, 원본 경로/쿼리는 그대로 둔다."""
+    if not url:
+        return ""
+
+    parsed = urlparse(url)
+    if "smartstore.naver.com" not in parsed.netloc:
+        return url
+
+    path = parsed.path or ""
+    query = f"?{parsed.query}" if parsed.query else ""
+    return f"https://smartstore.naver.com{path}{query}"
+
+
 class NaverSearchApiAdapter(NaverSearchPort):
     """Outbound adapter: call Naver Shopping API and map to domain products."""
 
@@ -58,7 +73,6 @@ class NaverSearchApiAdapter(NaverSearchPort):
         query: str,
         start: int = 1,
         display: int = 10,
-        smartstore_only: bool = False,
     ) -> List[Product]:
         payload = _request_search_products(query=query, start=start, display=display)
 
@@ -77,7 +91,7 @@ class NaverSearchApiAdapter(NaverSearchPort):
                     name=_clean_title(item.get("title", "")),
                     thumbnail_url=item.get("image", ""),
                     price=price,
-                    info_url=item.get("link", ""),
+                    info_url=_normalize_smartstore_url(item.get("link", "")),
                 )
             )
 
