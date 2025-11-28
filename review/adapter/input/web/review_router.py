@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends
 
-from product_review_crawling_agents.application.usecase.product_review_crawling_agents_usecase import (
-    ProductReviewAgentsUseCase,
+from product_review_collector.adapter.input.web.product_review_collector_router import (
+    get_collect_reviews_usecase,
+)
+from product_review_collector.application.usecase.collect_reviews_usecase import (
+    CollectReviewsUseCase,
 )
 from review.adapter.input.web.request.SummaryRequest import SummaryRequest
 from review.adapter.input.web.response.SummaryResponse import ProductSummary, SummaryResponse
@@ -11,11 +14,6 @@ from review.application.usecase.summarize_usecase import SummarizeUseCase
 from review.domain.pdf_document import PdfDocument
 
 review_router = APIRouter()
-
-
-def get_review_crawling_usecase() -> ProductReviewAgentsUseCase:
-    # Provided via dependency override in review.bootstrap.setup_module
-    raise RuntimeError("ProductReviewAgentsUseCase dependency is not wired")
 
 
 def get_preprocess_usecase() -> PreprocessUseCase:
@@ -36,13 +34,14 @@ def get_pdf_usecase() -> PdfUseCase:
 @review_router.post("/summary", response_model=SummaryResponse)
 async def analyze_product(
     data: SummaryRequest,
-    crawler: ProductReviewAgentsUseCase = Depends(get_review_crawling_usecase),
+    collector: CollectReviewsUseCase = Depends(get_collect_reviews_usecase),
     preprocess_usecase: PreprocessUseCase = Depends(get_preprocess_usecase),
     summarize_usecase: SummarizeUseCase = Depends(get_summarize_usecase),
     pdf_usecase: PdfUseCase = Depends(get_pdf_usecase),
 ):
     # 1. 크롤링
-    raw_reviews = await crawler.crawling_naver_review_agents(data.info_url)
+    collected_reviews = await collector.collect(str(data.info_url))
+    raw_reviews = [review.content for review in collected_reviews]
 
     # 2. 전처리
     preprocessed_data = preprocess_usecase.execute(raw_reviews)
@@ -74,6 +73,5 @@ async def analyze_product(
         ),
         pdf_url=pdf_result["url"],
     )
-
 
 

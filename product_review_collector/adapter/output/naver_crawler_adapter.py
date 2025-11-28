@@ -1,16 +1,15 @@
+import os
 import re
+import shutil
 import time
 from datetime import datetime
-from typing import Dict, List, Mapping, Any
+from typing import Any, Dict, List, Mapping
 
 import selenium.common
 from fastapi import HTTPException
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 
@@ -25,34 +24,39 @@ class NaverCrawlerAdapter(ReviewCrawlerPort):
         return self._parse_reviews_from_html_list(html_list)
 
     def _build_driver(self, headless: bool) -> webdriver.Chrome:
+        """Construct a Chrome WebDriver with configurable binary path."""
         options = webdriver.ChromeOptions()
         if headless:
-            options.add_argument("--headless=new")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-infobars")
+            options.add_argument("headless")
+        options.add_argument("window-size=1920x1080")
+        options.add_argument("disable-gpu")
+        options.add_argument("disable-infobars")
         options.add_argument("--disable-extensions")
         options.add_argument("--no-sandbox")
-        options.add_argument("--lang=ko-KR")
-        options.add_argument("--remote-allow-origins=*")
-        options.add_argument(
-            "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-        )
-        options.add_experimental_option(
-            "prefs",
-            {
-                "profile.managed_default_content_settings.images": 2,
-            },
-        )
 
-        driver = webdriver.Chrome(
-            options=options,
-            service=Service(ChromeDriverManager().install()),
-        )
+        driver_path = self._resolve_driver_path()
+        driver = webdriver.Chrome(options=options, service=Service(driver_path))
         driver.implicitly_wait(3)
         return driver
+
+    def _resolve_driver_path(self) -> str:
+        """Resolve chromedriver path from env/PATH; fall back to webdriver-manager."""
+        env_path = os.getenv("CHROMEDRIVER_PATH")
+        if env_path:
+            return env_path
+
+        path_from_env = shutil.which("chromedriver")
+        if path_from_env:
+            return path_from_env
+
+        # As a last resort, attempt download (requires network).
+        try:
+            return ChromeDriverManager().install()
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"chromedriver not found. Set CHROMEDRIVER_PATH or install chromedriver. ({exc})",
+            )
 
     def _analyze_naver_shopping_product_url_and_get_html_list(self, product_url: str) -> List[str]:
         html_list: List[str] = []
@@ -66,13 +70,8 @@ class NaverCrawlerAdapter(ReviewCrawlerPort):
                 .replace(',', '')
             )
 
-        headless_preferred = True
-        try:
-            driver = self._build_driver(headless=headless_preferred)
-        except WebDriverException:
-            driver = self._build_driver(headless=False)
-
-        wait = WebDriverWait(driver, 10)
+        headless_preferred = os.getenv("CHROMEDRIVER_HEADLESS", "false").lower() in {"1", "true", "yes", "on"}
+        driver = self._build_driver(headless=headless_preferred)
 
         try:
             driver.get(product_url)
@@ -80,10 +79,7 @@ class NaverCrawlerAdapter(ReviewCrawlerPort):
 
             review_all_selector = '#content > div > div.Q1bBXdV7RJ > div.K38C2T0Ypx > div.wKQQf4o3UG > div > a'
 
-            review_all_button = wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, review_all_selector))
-            )
-            driver.execute_script("arguments[0].click();", review_all_button)
+            driver.find_element(By.CSS_SELECTOR, review_all_selector).click()
             time.sleep(1)
 
             initial_html = driver.page_source
@@ -97,15 +93,10 @@ class NaverCrawlerAdapter(ReviewCrawlerPort):
             html_list.append(initial_html)
 
             for i in range(3, total_review_pages + 2):
-                page_button = wait.until(
-                    EC.element_to_be_clickable(
-                        (
-                            By.CSS_SELECTOR,
-                            f'#REVIEW > div > div.JHZoCyHfg7 > div.HTT4L8U0CU > div > div > a:nth-child({i})',
-                        )
-                    )
-                )
-                driver.execute_script("arguments[0].click();", page_button)
+                driver.find_element(
+                    By.CSS_SELECTOR,
+                    f'#REVIEW > div > div.JHZoCyHfg7 > div.HTT4L8U0CU > div > div > a:nth-child({i})',
+                ).click()
                 time.sleep(1)
                 html_list.append(driver.page_source)
 
